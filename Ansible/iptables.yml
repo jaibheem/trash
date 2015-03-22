@@ -1,0 +1,10 @@
+---
+
+- name: Checking if the file  /etc/sudoers is immutable
+  hosts: "{{ nodes }}"
+
+  tasks:
+    - name: Touch /etc/sudoers file
+      shell: touch /etc/sudoers
+      sudo: yes
+      ignore_errors: true

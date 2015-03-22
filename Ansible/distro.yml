@@ -1,0 +1,6 @@
+---
+- name: distro pb
+  hosts: localhost
+  tasks:
+    - name: show distro
+      debug: msg={{ ansible_distribution }}

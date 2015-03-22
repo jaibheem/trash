@@ -1,0 +1,26 @@
+- name: Restore from backup
+  hosts: "localhost"
+  connection: local
+  gather_facts: no
+  vars_files:
+    - ../common/vars/global.yml
+
+  vars:
+    - ANSIBLE_DIR: "{{ lookup('env','ANSIBLE_DIR') }}"
+
+  tasks:
+
+    - name: Get the snapshots from db
+      local_action: get_instance_details pod={{ pod }} az={{ az }} action=getsnapid
+      register: result
+    - debug: var=result.snaps
+
+    - name: Waiting for user confirmation
+      pause: prompt="Enter the snapshot ID from which you would like to restore"
+      register: snapshot_id
+    - debug: var=snapshot_id.user_input
+
+    - name: Get the snapshot size
+      local_action: get_instance_details pod={{ pod }} az={{ az }} snapshot_id={{ snapshot_id.user_input }} action=getsize
+      register: size
+    - debug: var=size.stdoutlines
