@@ -1,0 +1,107 @@
+- name: PG 9.4 Upgrade
+  hosts: "{{ nodes }}"
+  gather_facts: False
+
+  vars_files:
+    - ../common/vars/global.yml
+
+  vars:
+    - pgdata: /ebs/pgdata
+    - dbport: 5432
+    - apptype: "postgres"
+    - overridden_facts: None
+    - ANSIBLE_DIR: "{{ lookup('env','ANSIBLE_DIR') }}"
+
+  tasks:
+
+    - include: ../common/tasks/get_facts.yml tags=upgrade
+
+    - name: Install postgresql94-server
+      yum: name=postgresql94-server state=present
+      sudo: yes
+      tags:
+        pre-upgrade
+
+    - name: Install postgresql94-contrib
+      yum: name=postgresql94-contrib state=present
+      sudo: yes
+      tags:
+        pre-upgrade
+
+    - name: Install postgresql94-devel
+      yum: name=postgresql94-devel state=present
+      sudo: yes
+      tags:
+        pre-upgrade
+
+    - name: Create /etc/sysconfig/pgsql/postgresql-9.4
+      copy: src=../common/templates/postgresql-9.4 dest=/etc/sysconfig/pgsql/postgresql-9.4 owner=postgres group=postgres mode=0644
+      sudo: yes
+      tags:
+        pre-upgrade
+
+    - include: ../common/tasks/get_instanceid.yml ipaddress={{ inventory_hostname }} tags=upgrade
+
+    - name: Get availability-zone
+      shell: curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone
+      register: az
+      tags:
+        upgrade
+
+    - include: ../common/tasks/common_services.yml service_state="stopped" tags=stop_puppet
+
+    - name: Stop S3 and Redshift uploads
+      shell: ps -ef | egrep "pgdump|s3upload|rsupload" | awk '{print $2}' | xargs kill
+      sudo: yes
+      ignore_errors: True
+      tags:
+        upgrade
+
+    - name: Get PG version
+      shell: cat /ebs/pgdata/PG_VERSION
+      sudo: yes
+      register: pg_version
+      tags:
+        upgrade
+
+    - debug: var=postgresql-{{ pg_version.stdout_lines[0] }}
+      tags:
+        upgrade
+
+    - name: Stop PG service
+      service: name=postgresql-{{ pg_version.stdout_lines[0] }} state=stopped
+      sudo: yes
+      tags:
+        upgrade
+
+    - local_action: snapshot hostname={{ inventory_hostname }} instance_id={{ instanceid.stdout }} region={{ az.stdout[:-1] }} aws_access_key={{ AWS_ACCESS_KEY }} aws_secret_key={{ AWS_SECRET_KEY }}
+      register: snap
+      tags:
+        upgrade
+
+    - name: Rename the Binary directory
+      command: /bin/mv /usr/pgsql-{{ pg_version.stdout_lines[0] }} /usr/pgsql-{{ pg_version.stdout_lines[0] }}.old
+      sudo: True
+      tags:
+        upgrade
+
+    - name: Rename PGData directory
+      command: /bin/mv /ebs/pgdata/ /ebs/pgdata-{{ pg_version.stdout_lines[0] }}.old/
+      sudo: yes
+      tags:
+        upgrade
+
+#    - name: Create PGData directory
+#      file: path=/ebs/pgdata state=directory owner=postgres group=postgres mode=0700 recurse=yes
+#      sudo: yes
+#      tags:
+#        upgrade
+
+    - name: initdb the pgdata directory
+      command: /etc/init.d/postgresql-9.4 initdb en_US.UTF-8
+      sudo: yes
+      tags:
+        upgrade
+
+    - name: Copy the postgresql.conf
+
