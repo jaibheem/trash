@@ -18,7 +18,7 @@ def main():
     #     pass
     # else:
     #     pass
-    number = 15
+    number = int(raw_input("Enter a number:"))
     if number % 3 == 0 and number % 5 == 0:
         print "Fizzbuzz"
     elif number % 5 == 0:
