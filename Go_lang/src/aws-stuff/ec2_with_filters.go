@@ -5,17 +5,25 @@ import (
 	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/olekukonko/tablewriter"
 )
 
 func main() {
+	aws_access_key_id := os.Getenv("aws_access_key")
+	aws_secret_access_key := os.Getenv("aws_secret_key")
+	token := ""
+	creds := credentials.NewStaticCredentials(aws_access_key_id, aws_secret_access_key, token)
 	region := []string{"ap-southeast-2", "sa-east-1", "ap-southeast-1", "ap-northeast-1", "eu-west-1", "us-west-2", "us-east-1"}
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"Hostname", "PrivateIpAddress", "InstanceType", "AvailabilityZone"})
 	for _, reg := range region {
-		svc := ec2.New(session.New(), &aws.Config{Region: aws.String(reg)})
+		svc := ec2.New(session.New(), &aws.Config{
+			Region:      aws.String(reg),
+			Credentials: creds,
+		})
 		params := &ec2.DescribeInstancesInput{
 			Filters: []*ec2.Filter{
 				{
