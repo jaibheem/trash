@@ -29,7 +29,8 @@ func main() {
 				{
 					Name: aws.String("tag-value"),
 					Values: []*string{
-						aws.String("cassandra"),
+						aws.String("application1"),
+						aws.String("application2"),
 					},
 				},
 			},
