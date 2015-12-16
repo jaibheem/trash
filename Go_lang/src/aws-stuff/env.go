@@ -8,9 +8,9 @@ import (
 	"os"
 )
 
-type org struct {
-	DisplayName  string
-	Environments []string
+type Org struct {
+	Name string   `json:"displayName"`
+	Env  []string `json:"environments"`
 }
 
 func jsonGet() ([]byte, error) {
@@ -37,10 +37,9 @@ func main() {
 	raw, _ := jsonGet()
 	//	var mapp map[string]interface{}
 	//	var mapp map[interface{}]interface{}
-	var mapp org
+	var mapp Org
 	json.Unmarshal(raw, &mapp)
-	for _, i := range mapp.Environments {
-
+	for _, i := range mapp.Env {
 		fmt.Println(i)
 	}
 }
