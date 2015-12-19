@@ -1,0 +1,7 @@
+- name: Disk usage
+  hosts: "{{ nodes }}"
+  gather_facts: False
+
+  tasks:
+
+    - script: /home/jaibheemsen/1.sh
